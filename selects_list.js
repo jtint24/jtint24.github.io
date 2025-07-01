@@ -88,6 +88,9 @@ selects_list = [
     new Select("Nuuber", "imgs/nuuber.png", 25),
     new Select("Squinch", "imgs/squinch.png", 10),
     new Select("Plehbrrry", "imgs/plehbrrry.png", 100),
+    new Select("Dr. Detecto", "imgs/dr_detecto.png", 100),
+    new Select("Mike", "imgs/mike.png", 100),
+
 ]
 
 
