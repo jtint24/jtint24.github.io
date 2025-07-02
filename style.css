@@ -118,3 +118,39 @@ p {
     }
 }
 
+
+
+.pub-block {
+    background-color: #ffffff22;
+    border-left: 6px solid #188FA7;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    transition: background-color 0.3s;
+}
+
+.pub-block.nonacademic {
+    border-left: 6px solid #018E42
+}
+
+.pub-block:hover {
+    background-color: #ffffff33;
+}
+
+.pub-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #e0f2e9;
+    margin-bottom: 0.3rem;
+}
+
+.pub-authors {
+    font-size: 1rem;
+    color: #A8DADC;
+    margin-bottom: 0.2rem;
+}
+
+.pub-details {
+    font-size: 0.95rem;
+    color: #F1FAEE;
+}
