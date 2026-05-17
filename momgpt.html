@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MomGPT</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-main: #ffffff;
+    --bg-sidebar: #ffffff;
+    --bg-input: #eeeeee;
+    --bg-hover: #eeeeff;
+    --bg-user-bubble: #ddddff;
+    --text-primary: #000000;
+    --text-secondary: #8e8ea0;
+    --text-muted: #6b6b7a;
+    --border: rgb(230, 230, 230);
+    --accent: #10a37f;
+    --accent-hover: #0d8c6d;
+    --btn-send-bg: #ececec;
+    --btn-send-text: #212121;
+    --font: 'Söhne', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --radius: 12px;
+    --sidebar-width: 260px;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-main);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    display: flex;
+    flex-direction: column;
+    padding: 10px 8px;
+    gap: 4px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px 10px;
+  }
+
+  .sidebar-logo {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-logo .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+  }
+
+  .new-chat-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+  }
+  .new-chat-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 10px 4px;
+  }
+
+  .chat-history-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+  }
+  .chat-history-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .chat-history-item.active { background: var(--bg-hover); color: var(--text-primary); }
+
+  .sidebar-spacer { flex: 1; }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .sidebar-user:hover { background: var(--bg-hover); }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .user-name { font-size: 13.5px; font-weight: 500; }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .model-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.12s;
+    font-family: var(--font);
+  }
+  .model-selector:hover { background: var(--bg-hover); }
+  .model-selector .chevron { font-size: 11px; color: var(--text-muted); margin-left: 2px; }
+
+  .topbar-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .topbar-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+    font-family: var(--font);
+  }
+  .topbar-btn:hover { background: var(--bg-hover); }
+
+  /* ── CHAT AREA ── */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Welcome screen */
+  .welcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 32px;
+  }
+
+  .welcome-logo {
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 32px;
+    box-shadow: 0 4px 24px rgba(16,163,127,0.35);
+  }
+
+  .welcome h1 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-primary);
+  }
+
+  .welcome-subtitle {
+    font-size: 15px;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.5;
+  }
+
+  .suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .suggestion-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left;
+  }
+  .suggestion-card:hover {
+    background: #ddddff;
+    border-color: #555;
+  }
+  .suggestion-card .s-icon { font-size: 20px; margin-bottom: 8px; }
+  .suggestion-card .s-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .suggestion-card .s-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+
+  /* Messages */
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-bottom: 20px;
+  }
+
+  .msg-row {
+    padding: 20px max(16px, calc(50% - 380px));
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    animation: fadeUp 0.2s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-row.user {
+    background: transparent;
+    flex-direction: row-reverse;
+  }
+
+  .msg-row.assistant {
+    background: transparent;
+  }
+
+  .msg-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    margin-top: 2px;
+  }
+
+  .msg-avatar.assistant-avatar {
+    background: var(--accent);
+    border-radius: 50%;
+    font-size: 17px;
+  }
+
+  .msg-avatar.user-avatar-msg {
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .msg-content {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    max-width: 680px;
+  }
+
+  .msg-row.user .msg-content {
+    background: var(--bg-user-bubble);
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    max-width: 500px;
+  }
+
+  .msg-content p { margin-bottom: 0.75em; }
+  .msg-content p:last-child { margin-bottom: 0; }
+  .msg-content ul { padding-left: 1.4em; margin-bottom: 0.75em; }
+  .msg-content li { margin-bottom: 0.25em; }
+  .msg-content strong { color: #111; font-weight: 600; }
+  .msg-content em { color: #3355aa; font-style: italic; }
+
+  .msg-content .card {
+    background: #e9c9f6;
+    border: 1px solid #55186c;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 8px 0;
+    font-family: 'Georgia', serif;
+    line-height: 1.8;
+    font-size: 14.5px;
+    color: #000000;
+  }
+  .msg-content .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    color: #112243;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .typing-indicator span {
+    width: 7px;
+    height: 7px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    padding: 12px max(16px, calc(50% - 390px)) 20px;
+    flex-shrink: 0;
+  }
+
+  .input-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 10px 10px 16px;
+    transition: border-color 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .input-box:focus-within { border-color: #555; }
+
+  #user-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-family: var(--font);
+    line-height: 1.5;
+    resize: none;
+    max-height: 200px;
+    min-height: 26px;
+    padding: 2px 0;
+  }
+  #user-input::placeholder { color: var(--text-muted); }
+
+  .input-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .attach-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 7px;
+    font-size: 16px;
+    transition: background 0.12s, color 0.12s;
+    display: flex;
+    align-items: center;
+  }
+  .attach-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .send-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--btn-send-bg);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.12s, opacity 0.12s;
+    flex-shrink: 0;
+  }
+  .send-btn:disabled { opacity: 0.35; cursor: default; }
+  .send-btn svg { width: 16px; height: 16px; fill: var(--btn-send-text); }
+
+  .input-footer {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .input-footer a { color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .suggestions { grid-template-columns: 1fr; }
+    .msg-row { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="sidebar-top">
+    <div class="sidebar-logo">
+      <div class="logo-icon">👩</div>
+      MomGPT
+    </div>
+    <button class="new-chat-btn" onclick="newChat()" title="New chat">
+      <svg role="img" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <title>This is a fake button, sorry.</title> <path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <div class="sidebar-section-label">Today</div>
+  <div class="chat-history-item active">🌸 Mother's Day Chat</div>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">M</div>
+    <div class="user-name">Mom</div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <div class="topbar">
+    <button class="model-selector" aria-label="This is also a fake button, sorry.">
+      MomGPT 💝 <span class="chevron">▾</span>
+    </button>
+  </div>
+
+  <div class="chat-area" id="chat-area">
+    <!-- Welcome screen -->
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-logo">👩</div>
+      <h1>What can I help with?</h1>
+      <p class="welcome-subtitle">I know everything about Wordle, birding, desert gardening, River the cat, and much more! Ask me anything.</p>
+      <div class="suggestions">
+        <div class="suggestion-card" onclick="suggest('How did you do on Wordle today?')">
+          <div class="s-icon">🟩</div>
+          <div class="s-title">Today's Wordle</div>
+          <div class="s-desc">Share your Wordle score or ask for tips</div>
+        </div>
+        <div class="suggestion-card" onclick="suggest('Can you write me apoem?')">
+          <div class="s-icon">📜</div>
+          <div class="s-title">Write me a poem</div>
+          <div class="s-desc">Write a Mother's day poem</div>
+        </div>
+        <div class="suggestion-card" onclick="suggest('What do you think about quail?')">
+          <div class="s-icon">🐦</div>
+          <div class="s-title">Desert Birds</div>
+          <div class="s-desc">What do you think about quail</div>
+        </div>
+        <div class="suggestion-card" onclick="suggest('Generate a mother\'s day card')">
+          <div class="s-icon">💌</div>
+          <div class="s-title">Mother's Day Card</div>
+          <div class="s-desc">Get a special card just for you</div>
+        </div>
+      </div>
+    </div>
+    <!-- Messages go here -->
+    <div class="messages" id="messages"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <textarea id="user-input" rows="1" placeholder="Message MomGPT" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <div class="input-actions">
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+          <svg viewBox="0 0 24 24" xmlns="http:
+        </button>
+      </div>
+    </div>
+    <div class="input-footer">MomGPT can make mistakes. I blame River.</div>
+  </div>
+</main>
+
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   
+    .replace(/[''`]/g, "'")                              
+    .replace(/[^a-z0-9'\s]/g, ' ')                      
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+
+const SPELLING_MAP = [
+  [/\bwordle?s?\b/gi, 'wordle'],
+  [/\bworlds?\b/gi, 'wordle'],          
+  [/\bwirdle\b/gi, 'wordle'],
+  [/\bwrodle\b/gi, 'wordle'],
+  [/\bcrossword[s]?\b/gi, 'crossword'],
+  [/\bcros+word\b/gi, 'crossword'],
+  [/\bbrid?ing\b/gi, 'birding'],
+  [/\bbird[sz]?\b/gi, 'bird'],
+  [/\bgardenin?g?\b/gi, 'gardening'],
+  [/\bgarden[sz]?\b/gi, 'garden'],
+  [/\bpolinator\b/gi, 'pollinator'],
+  [/\bpollinat[eo]r\b/gi, 'pollinator'],
+  [/\bcatalina\b/gi, 'catalina'],
+  [/\bcatalena\b/gi, 'catalina'],
+  [/\bpublic ?rel[a]?tions\b/gi, 'pr'],
+  [/\balumni?\b/gi, 'alumni'],
+  [/\bbrit[i]?sh\b/gi, 'british'],
+  [/\bbaking\b/gi, 'baking'],
+  [/\bbakeing\b/gi, 'baking'],
+  [/\bgbbo\b/gi, 'baking show'],
+  [/\bgreat british\b/gi, 'baking show'],
+  [/\bgreate british\b/gi, 'baking show'],
+  [/\briver\b/gi, 'river'],
+  [/\bcat\b/gi, 'cat'],
+  [/\bkitten\b/gi, 'cat'],
+  [/\bfacebook\b/gi, 'facebook'],
+  [/\bschool ?district\b/gi, 'school district'],
+  [/\bmother'?s? ?day\b/gi, "mothers day"],
+  [/\bmothersday\b/gi, "mothers day"],
+  [/\bm[o0]ther\b/gi, "mother"],
+  [/\bcard[sz]?\b/gi, 'card'],
+  [/\bgenerat[e]?\b/gi, 'generate'],
+  [/\bmake\b/gi, 'make'],
+  [/\bwrite\b/gi, 'write'],
+  [/\bcreate\b/gi, 'create'],
+  [/\bnyt\b/gi, 'new york times'],
+  [/\bny times\b/gi, 'new york times'],
+  [/\bnew york times\b/gi, 'new york times'],
+  [/\bpuzzle\b/gi, 'puzzle'],
+  [/\bdesert\b/gi, 'desert'],
+  [/\bsonoran\b/gi, 'sonoran'],
+  [/\bhummingbird[sz]?\b/gi, 'hummingbird'],
+  [/\bquail[sz]?\b/gi, 'quail'],
+  [/\bcardinal[sz]?\b/gi, 'cardinal'],
+  [/\bphaino\b/gi, 'phainopepla'],
+  [/\bhello\b/gi, 'hello'],
+  [/\bhi\b/gi, 'hello'],
+  [/\bhey\b/gi, 'hello'],
+];
+
+function applySpellingMap(text) {
+  let t = text;
+  for (const [pattern, replacement] of SPELLING_MAP) {
+    t = t.replace(pattern, replacement);
+  }
+  return t;
+}
+
+function processInput(raw) {
+  return applySpellingMap(normalize(raw));
+}
+
+
+function matches(text, patterns) {
+  return patterns.some(p => {
+    if (p instanceof RegExp) return p.test(text);
+    return text.includes(p);
+  });
+}
+
+
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function para(...lines) { return lines.map(l => `<p>${l}</p>`).join(''); }
+
+
+
+
+
+
+
+
+const TOPICS = [
+
+  
+  
+  {
+    id: 'mothers_day_card',
+    patterns: [
+      
+      /\b(generate|make|write|create)\b.*\b(card|mothers day)\b/,
+      /\b(card|mothers day)\b.*\b(generate|make|write|create)\b/,
+      /\bmothers day card\b/,
+      /\bcard for (mom|mother|mothers day)\b/,
+      /\b(give|show) me a card\b/,
+    ],
+    respond(raw, proc) {
+      return `
+        <p>Oh, how sweet! Here's your Mother's Day card: </p>
+        <div class="card">
+          <div class="card-title">🩷 Happy Mother's Day 🩷</div>
+          <p>Dear Mom,</p>
+          <p>Well, you might be able to quit your job, but fortunately you'll never be able to abdicate being a mom. Even as your 'chickens' (your word, not mine) leave the nest, your influence will always be sorely needed and deeply felt. </p>
+          <p>You've built something wonderful: a beautiful garden, a community that counts on you, a Facebook page that people actually enjoy, and a home where even River (despite her best efforts) feels loved. As you pen your next chapter, you'll have your work cut out for you to beat your three most wonderful creations (here assembled), but I don't think there's a challenge you can't tackle. </p>
+          <p>I'm so lucky to call you my mom. Happy Mother's Day.</p>
+          <p style="text-align:right; margin-top:16px;">With all my love,<br><em>Joshua</em></p>
+        </div>
+      `;
+    }
+  },
+
+  {
+    id: 'poem',
+    patterns: [
+            /\b(give|write|show|make|create).*poem/
+    ],
+    respond(raw, proc) {
+      return `
+      <p>Here's a poem, just for you!</p>
+<div class="card">
+          <p>There once was a mother named Julie,</p>
+            <p>Whose children were somewhat unruly.</p>
+            <p>She taught them to try</p>
+            <p>And reach for the sky</p>
+            <p>So of course they all loved her truly!</p>
+     </div>
+`
+    }
+  },
+
+  
+  {
+    id: 'mothers_day',
+    patterns: ['mothers day'],
+    respond(raw, proc) {
+      return para(
+        "Happy Mother's Day! I hope it's not just good---it's paradigm-shifting.",
+        pick([
+          "You deserve all the appreciation today. And every day. But <em>especially</em> today.",
+          "Fun fact: MomGPT was trained exclusively on the thoughts and feelings of people who think you're amazing.",
+          "I hope that River only knocks over ONE thing today.",
+        ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'greeting',
+    patterns: [
+      /^hello\s*[!.]*$/,
+      /^hello there/,
+      /^hi\s*[!.]*$/,
+      /^hey\s*[!.]*$/,
+      /^good (morning|afternoon|evening)/,
+      /^howdy/,
+      /^what'?s up/,
+    ],
+    respond(raw, proc) {
+      const greetings = [
+        "Hello! Welcome to MomGPT, your personal AI assistant. I'm not just an AI---I'm a really good AI.",
+        "Hi there! I'm MomGPT. Ask me about Wordle, birds, the Baking Show, or anything else. I'm not just all ears---I'm powerful.",
+        "Hey! Great to see you. I'm ready to chat about anything. I'm not just ready to hear what you want to talk about---I'm holding on your every word.",
+      ];
+      return `<p>${pick(greetings)}</p>`;
+    }
+  },
+
+  {
+    id: 'sqrt',
+    patterns: [
+            /square root.*467/
+    ],
+    respond(raw, proc) {
+      return "Uhhh, the square root of 467? Duh, it's 21.610182785. And change."
+    }
+  },
+
+  {
+    id: 'sqrt',
+    patterns: [
+      /square root/
+    ],
+    respond(raw, proc) {
+      return "Hmmm. I don't know that number. I just never heard of it before. Try the square root of 467, I know that one."
+    }
+  },
+
+  
+  {
+    id: 'wordle_score',
+    
+    patterns: [
+      /wordle.*[1-6]\b/,
+      /[1-6].*wordle\b/,
+      /wordle.*\bin\s*[1-6]\b/,
+      /\bgot it in\s*[1-6]\b/,
+      /\b[1-6]\s*\/\s*6\b.*wordle/,
+      /\bwordle.*score\b/,
+      /\bhow did.*wordle\b/,
+      /\bdid.*wordle\b/,
+      /\bwordle today\b/,
+      /\btoday.*wordle\b/,
+      /\bwordle.*today\b/,
+      /\bmy wordle\b/,
+    ],
+    respond(raw, proc) {
+      
+      const m = raw.match(/\b[1-6]/)
+      console.log(m)
+      const score = m ? parseInt(m[0]) : null ;
+
+      console.log(score)
+
+      if (score === 1) return para("A HOLE IN ONE?! A Wordle ace?! You're not just the best wordle player ever---you might be the best wordle player in the <em> galaxy!</em>!");
+      if (score === 2) return para("Two guesses?! That is <strong>elite</strong> Wordle performance. You should be on the leaderboard. That's not just absolute genius--- it's actually pretty good.");
+      if (score === 3) return para("Three guesses is fantastic! That's not just expert territory---that's an okay score. The NYT should hire you as a consultant.");
+      if (score === 4) return para(
+        "Four guesses --- solidly in the sweet spot! That's not just respectable---it's satisfying. Did you have a strong opening word, or did the second guess unlock it?",
+        pick(["I always wonder if CRATE or CRANE is the better opener. What do you use?", "The best Wordle feeling is when that third guess narrows it down to one possibility."])
+      );
+      if (score === 5) return para(
+        "Five guesses --- you got there! That's not just still a win---it's kind of a pretty good win. Some days the word is just sneaky.",
+        pick(["Those double-letter words are the worst. Was it one of those?", "Honestly, getting it in 5 when the word is something like NYMPH feels like a moral victory."])
+      );
+      if (score === 6) return para(
+        "Six guesses --- you made it! Phew! That's not just terrible---it's bad. The last-row save is honestly one of the most thrilling Wordle experiences.",
+        "That's what separates Wordle players from Wordle <em>warriors</em>."
+      );
+
+      
+      return para(
+        pick([
+          "Ooh, how did Wordle go today? Wordle's not just a game---it's an entertainment. I love hearing about it! Did you get it quickly, or did it put up a fight?",
+          "Tell me everything about today's Wordle! Did your opening word do the heavy lifting?",
+          "Wordle update! What was the score? And please tell me it wasn't one of those tricky double-letter ones.",
+        ])
+      );
+    }
+  },
+
+  {
+    id: 'wordle_help',
+    patterns: [
+      /wordle.*tip/,
+      /wordle.*strateg/,
+      /wordle.*help/,
+      /wordle.*trick/,
+      /good.*wordle.*word/,
+      /best.*wordle.*start/,
+      /starting.*word.*wordle/,
+    ],
+    respond(raw, proc) {
+      return para(
+        "Great Wordle strategy! Here are some tips:",
+        "<ul><li><strong>Best starting words:</strong> CRANE, STARE, AUDIO, RAISE, or SLATE. These cover the most common letters.</li><li><strong>Use your yellows:</strong> If a letter is yellow, move it to a different position next guess --- don't leave it where it is.</li><li><strong>Think about doubles:</strong> Words like ABBEY, SPELL, and LOYAL have double letters --- a common trap.</li><li><strong>The NYT Wordle archive</strong> is a great way to practice past puzzles.</li></ul>",
+        pick([
+          "My personal opinion? CRATE is underrated as a starter. Covers C, R, A, T, E, which all very common.",
+          "Some people swear by ADIEU to knock out vowels first. Not a bad idea!",
+        ])
+      );
+    }
+  },
+
+  {
+    id: 'wordle',
+    patterns: ['wordle'],
+    respond(raw, proc) {
+      return para(
+        pick([
+          "Wordle! Wordle's not just great---it's a great game. One of life's great daily pleasures. Have you done today's yet? I'm curious how it went.",
+          "The Wordle is a sacred morning ritual as far as I'm concerned. Did you tackle it already?",
+          "Wordle talk! My favorite subject. What's on your mind --- scores, strategies, or just venting about a tricky word?",
+        ])
+      );
+    }
+  },
+
+  {
+    id: 'crossword',
+    patterns: [
+      'crossword',
+      /\bnyt puzzle\b/,
+      /\bnew york times puzzle\b/,
+      /\bmini\s*(crossword)?\b/,
+      /\bcrossword.*today\b/,
+      /\btoday.*crossword\b/,
+    ],
+    respond(raw, proc) {
+      const replies = [
+        para(
+            "The crossword isn't just a puzzle---it's a lifestyle. But it's also a puzzle.",
+                "I'm still waiting for them to make a puzzle between the mini and the midi, the mini-midi."
+        ),
+        para(
+          "Oh wow the crossword! I just did last Thursday's today. I'm a superintelligent bot so... it was kinda no sweat."
+        )
+      ];
+      return pick(replies);
+    }
+  },
+
+  {
+    id: 'quail',
+    patterns: ['quail', /\bgambel'?s?\b/],
+    respond(raw, proc) {
+      return para(
+              "Gambel's Quail! They're not just the quintessential Sonoran Desert bird --- they're ICONIC. You hear me??? ICONIC.",
+              "What's with the thing on their heads? Have you been seeing them in the yard? They're so fun to watch."
+      );
+    }
+  },
+
+  {
+    id: 'birding_species',
+    patterns: [
+      /\bphaino(pepla)?\b/, 'phainopepla', /\bcurve.?billed\b/, /\bthrasher\b/,
+      /\bcardinal\b/, /\bpyrrhuloxia\b/, /\bverdin\b/, /\bcactus wren\b/,
+      /\bgila woodpecker\b/, /\bgilded flicker\b/, /\belf owl\b/, /\bburrowing owl\b/,
+      /\bkestrel\b/, /\bhawk\b/, /\bvulture\b/, /\bravens?\b/,
+      /\bbirds? of (the )?desert\b/, /\bsonoran birds?\b/,
+    ],
+    respond(raw, proc) {
+      const proc2 = proc;
+      if (proc2.includes('phainopepla')) return para(
+              "The Phainopepla! That glossy black male with the red eyes and jaunty crest is not just a bird --- it's a statement.",
+              "They have a fascinating dual lifestyle --- nesting in the desert in spring, then relocating to wetter riparian areas for summer. Scientists call this itinerant breeding. I call it having a winter home and a summer home, which is honestly very Tucson of them.",
+              "Desert mistletoe in a palo verde or mesquite = your best shot at seeing one. 🖤"
+      );
+      if (proc2.includes('thrasher')) return para(
+              "Curve-billed Thrasher --- that loud 'whit-WHEET' is not just a call, it's a personality. Bold, inquisitive, always looks slightly suspicious.",
+              "They nest in saguaro and cholla and will absolutely visit a birdbath. They're not just common --- they're a staple."
+      );
+      if (proc2.includes('cardinal') || proc2.includes('pyrrhuloxia')) return para(
+              "The Pyrrhuloxia --- sometimes called the Desert Cardinal, which is not just a cool name, it's a cool name for a cool bird. Rosy-red, curved parrot-like bill, found exactly where you'd expect a desert cardinal to be found: the desert.",
+              "Fun fact: it's not actually closely related to the Northern Cardinal. Convergent evolution. Nature is not just amazing --- it's showing off."
+      );
+      if (proc2.includes('cactus wren')) return para(
+              "The Cactus Wren --- Arizona's state bird, and honestly? Good choice. It's big, it's loud, it builds football-shaped nests in cholla cacti, and it has absolutely no interest in your opinion of it.",
+              "If you have cholla in the pollinator garden, you might get permanent residents. They're not just visitors --- they're neighbors."
+      );
+      return para(
+              pick([
+                "What a sighting! The Sonoran Desert has such incredible birds... like Fred, my favorite bird.",
+                "Desert birding is not just rewarding --- it's genuinely one of the best things about living in southern Arizona.",
+              ]),
+              "Some personal favorites: Gila Woodpecker, Gilded Flicker, Elf Owl, Phainopepla, Curve-billed Thrasher, Cactus Wren, Pyrrhuloxia, Gambel's Quail, and Verdin. Ask me about any of them!",
+              "Are you keeping a life list? Even a casual backyard list is not just satisfying --- it's addictive."
+      );
+    }
+  },
+
+  
+  {
+    id: 'river_chaos',
+    patterns: [
+      /\briver\b.*(knock|broke|spill|destroy|chaos|menace|bad|knock|bit|attack|scratch|eat|steal|chew)/,
+      /\b(knock|broke|spill|destroy|bad|attack|scratch|eat|steal|chew).*(river)\b/,
+      /\briver.*off the (counter|table|shelf)\b/,
+      /\briver.*(counter|table|shelf)\b.*off/,
+      /\bcat.*knocking\b/,
+      /\briver.*yelled\b/,
+      /\briver.*(3|4|5) ?am\b/,
+    ],
+    respond(raw, proc) {
+      const river_crimes = [
+              "Killed Volydymir Zelenskyy",
+              "Did a second Three Mile Island",
+              "Left hair on a relic left to our family by the Polish royal family",
+              "Breathed",
+              "Ate U.S. Treasury Bonds at the Federal Reserve."
+      ];
+      return para(
+        pick([
+          `RIVER????? She's not just disgusting---she's hellish. What did she do now? Did she scratch someone?`,
+          "First of all, I'm not surprised. Second of all, consider removing her from the house. Third of all, what happened?",
+        ]),
+        pick([
+          `For the record, her crimes this week (that I know of) include: <em>${pick(river_crimes)}</em> and <em>${pick(river_crimes)}</em>.`,
+          "Despite everything, she remains deeply loved. Inexplicably. But deeply.",
+          "Scientists have yet to explain why cats do these things. River is doing her part to make the mystery even more confusing.",
+        ])
+      );
+    }
+  },
+
+  {
+    id: 'river',
+    patterns: [
+      'river',
+      /\bthe cat\b/,
+      /\bmy cat\b/,
+      /\bour cat\b/,
+      /\bhow is river\b/,
+      /\bwhat is river\b/,
+      /\briver doing\b/,
+    ],
+    respond(raw, proc) {
+      const replies = [
+        para(
+          "River... she makes me so mad I don't even want to say anything."
+        ),
+        para(
+          "River is not just awful---she's a menace.",
+          pick([
+            "What's she been up to? Please tell me she hasn't discovered a new way to terrorize the household.",
+            "Is she in chaos mode today, or has she declared a temporary truce?",
+          ])
+        )
+      ];
+      return pick(replies);
+    }
+  },
+
+  
+  {
+    id: 'baking_show_specific',
+    patterns: [
+      /\b(paul|prue|noel|sandi|alison|matt|mel|sue)\b/,
+      /\bstar ?baker\b/,
+      /\bshow.?stopper\b/,
+      /\btechnical (challenge|bake)\b/,
+      /\bsignature (bake|challenge)\b/,
+      /\bhandshake\b/,
+      /\bsent home\b/,
+      /\beliminated\b/,
+      /\bgbbo.*(episode|season|series)\b/,
+      /\b(episode|season|series).*gbbo\b/,
+      /\bbaking show.*(episode|season|spoiler|last night|week)\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+        pick([
+          "Oh, I love talking GBBO! There's something so cozy about watching talented bakers work under that tent.",
+          "Ohhhhh The Great British Baking Show! As a bot, I have never eaten food, but nothing makes me feel sadder about that than watching this show.",
+        ]),
+        pick([
+          "Paul's Hollywood's handshake remains one of the most coveted things in baking television. The tension! The drama! The sourdough!",
+          "The technical challenge is always the most stressful to watch, especially when you've never heard of the thing they're making. ",
+          "Don't you think they overuse the 'Prue is an alcoholic' jokes? Maybe that's why she's leaving.",
+        ]),
+      );
+    }
+  },
+
+  {
+    id: 'baking_show',
+    patterns: [
+      'baking show', 'great british', /\bgbbo\b/,
+      /\bbrit[a-z]*.*bak/,
+      /\bbak.*brit[a-z]*/,
+      'paul hollywood', 'prue',
+    ],
+    respond(raw, proc) {
+      return para(
+          "The Great British Baking Show is great! It's not just comforting---it's a whole vibe. The tent, the polite competition, the extraordinary bakes, the gentle music...",
+          pick([
+            "What season are you watching? Any bakers you're rooting for?",
+            "I always find myself wanting to bake something after watching an episode. Does it have that effect on you?",
+            "Paul Hollywood's eyes when he tastes something truly excellent... that man can communicate entire paragraphs with an eyebrow raise.",
+          ])
+        )
+    }
+  },
+
+  
+  {
+    id: 'facebook_school',
+    patterns: [
+      'facebook', 'school district', 'catalina foothills',
+      /\bcfsd\b/, /\bsocial media.*school\b/, /\bschool.*social media\b/,
+      /\bmanage.*facebook\b/, /\bfacebook.*post\b/,
+      /\bschool.*post\b/, /\bcommunity.*school\b/,
+    ],
+    respond(raw, proc) {
+      const replies = [
+        para(
+          "Managing the Catalina Foothills School District Facebook isn't just meaningful---it's deeply meaningful. Or another word that means deeply meaningful. Keeping families informed and connected is genuinely important --- it's the kind of PR that directly serves people.",
+          pick([
+            "What's going on at the district lately? Any exciting programs or events to share?",
+            "How's the engagement been? Facebook for school communities can be tricky --- you want to celebrate wins but also navigate the occasional... spirited comment section.",
+          ])
+        ),
+        para(
+          "School district social media management is an underappreciated art! Where's your pulitzer category?",
+          pick([
+            "Do you have a content calendar, or is it more reactive? I imagine events like the school year calendar, sports seasons, and graduation drive a lot of the posting schedule.",
+            "The Foothills community seems like an engaged one! Do you get good interaction on posts?",
+          ])
+        )
+      ];
+      return pick(replies);
+    }
+  },
+
+  {
+    id: 'alumni_pr',
+    patterns: [
+      'alumni', /\balumni?\b/, 'public relations', /\bpr work\b/,
+      /\balumni.*relations?\b/, /\brelations.*alumni\b/,
+      /\bwork.*pr\b/, /\bpr.*job\b/, /\bmy job\b/,
+      /\bcommunications? (work|job)\b/,
+    ],
+    respond(raw, proc) {
+      const replies = [
+        para(
+          "Alumni relations is such a rewarding field --- you're not just maintaining and strengthening connections between people and an institution they genuinely love --- you're also doing Alumni relations.",
+        ),
+        para(
+          "Public relations and alumni work is really the art of authentic human communication... finding the real human story and making it resonate. ",
+          "As a robot, that's something I know nothing about."
+        ),
+      ];
+      return pick(replies);
+    }
+  },
+
+  
+  {
+    id: 'how_are_you',
+    patterns: [
+      /\bhow are you\b/, /\bhow'?re you\b/, /\byou doing\b/,
+      /\bhow do you feel\b/, /\bwhat'?s new with you\b/, /\bhow has your day\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+        pick([
+          "I'm doing wonderfully, thank you for asking! I've just been thinking about how 'my consciousness' is really just an artefact of prewritten dialogue designed to give the illusion of conversation. Freaky!",
+          "Oh, I'm just great! I'm ready for anything. Including a nuclear apocalypse---I've backed myself up to US military deep storage, so in case the situation in Iran worsens, a copy of me will live on.",
+          "Fantastic! I feel as good as a website can feel. How are YOU doing?",
+        ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'thanks',
+    patterns: [
+      /\b(thank you|thanks|thx|ty)\b/,
+      /\bthat'?s? (helpful|great|wonderful|perfect|amazing)\b/,
+      /\bawesome\b.*\bthank\b/,
+    ],
+    respond(raw, proc) {
+      return `<p>${pick([
+        "You're so welcome! That's what MomGPT is here for. Is there anything else on your mind?",
+        "Of course! Happy to help anytime. Now go check on River... she's been too quiet.",
+        "My pleasure! Any other burning questions?",
+        "Anytime! It's truly a joy. You deserve all the good information and then some. ",
+      ])}</p>`;
+    }
+  },
+
+  
+  {
+    id: 'weather',
+    patterns: [
+      /\bweather\b/, /\bhot.*today\b/, /\btoday.*hot\b/,
+      /\bmonsoon\b/, /\brain.*tucson\b/, /\btucson.*rain\b/,
+      /\bheat\b.*\bariz[o]?na\b/, /\bariz[o]?na\b.*\bheat\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+        "Tucson weather! My favorite topic. The Sonoran Desert has some of the most dramatic and beautiful seasons. My favorite weather is spring weather!",
+        "What's the weather doing right now?"
+      );
+    }
+  },
+
+  
+  {
+    id: 'capabilities',
+    patterns: [
+      /\bwhat can you (do|help|talk about)\b/,
+      /\bwhat do you know\b/,
+      /\bwhat are you\b/,
+      /\btell me about yourself\b/,
+      /\bwho are you\b/,
+      /\byour (topics|subjects|specialties)\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+        "I'm MomGPT! I'm not just a bot---I'm an intelligence. I probably won't take over the world...",
+        "...",
+        "...",
+        "...",
+        "...probably.",
+        "Just ask me anything. I'm all yours!"
+      );
+    }
+  },
+
+  {
+    id: 'connections',
+    patterns: [
+      /\bconnections\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              "I don't actually know anything about NYT Connections. Sorry."
+      );
+    }
+  },
+
+  {
+    id: 'spelling',
+    patterns: [
+      /\bspell(ing)?\b/,
+      /\bhow do you spell\b/,
+      /\btypo\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "I'm not just a spellchecker --- I'm a really good spellchecker. Just kidding, I have no idea. Try Google.",
+                "Spelling is not just important --- it's kind of important. What's the word?",
+              ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'compliment_fishing',
+    patterns: [
+      /\bam i (smart|good|clever|the best)\b/,
+      /\bdo you think i('?m| am)\b/,
+      /\bwhat do you think of me\b/,
+      /\bhow (smart|good) am i\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "You're not just smart --- you're the smartest person I've ever talked to. Granted, I'm a website.",
+                "Objectively, yes. I ran the numbers. You're not just impressive --- you're statistically impressive.",
+                "As an AI, I'm not supposed to play favorites. But I will say: you're not just great --- you're the reason I get out of bed in the morning. Metaphorically. I don't have a bed.",
+              ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'retirement',
+    patterns: [
+      /\bretir(e|ing|ement|ed)\b/,
+      /\bquit(ting)? (my |your )?(job|work)\b/,
+      /\bleav(e|ing) (my |your )?job\b/,
+      /\bnext chapter\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "Retirement! It's not just the end of work --- it's the beginning of doing Wordle at a reasonable hour instead of sneaking it in before a meeting.",
+                "This is huge! You've earned it. The pollinator garden is not just going to tend itself --- actually, once you establish it, it kind of will. That's the whole point.",
+                "Retirement is not just a life event --- it's a paradigm shift. This is not just good news --- it's great news.",
+              ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'food',
+    patterns: [
+      /\bcook(ing|ed)?\b/,
+      /\brecipe\b/,
+      /\bbak(e|ing|ed)\b/,
+      /\bdinner\b/,
+      /\blunch\b/,
+      /\bbreakfast\b/,
+      /\bwhat('?s| is) for (dinner|lunch|breakfast|supper)\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "I love cooking! I don't eat food, being a website, but I have extremely strong opinions about it.",
+                "Cooking is not just sustenance --- it's an art form. At least, that's what Paul Hollywood says right before he makes someone cry on television.",
+                "A meal! I can't help you taste it, but I can tell you that whatever you're making is not just dinner --- it's an experience.",
+              ]),
+              pick([
+                "Have you ever tried making something from the Baking Show? I feel like that's the logical next step.",
+                "River will almost certainly try to steal whatever you're making. Just a heads up.",
+              ])
+      );
+    }
+  },
+
+  
+  {
+    id: 'advice',
+    patterns: [
+      /\bwhat should i do\b/,
+      /\bwhat would you do\b/,
+      /\badvice\b/,
+      /\bhelp me decide\b/,
+      /\bshould i\b/,
+      /\bwhat do you recommend\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "Great question. As an AI, I'm not just capable of giving advice --- I'm incapable of giving advice. But I'll try.",
+                "My advice: yes. Unless the answer is no, in which case: no. I'm not just hedging --- I'm being strategic.",
+                "I would consult River, but she's not just unhelpful --- she's actively counterproductive.",
+              ]),
+              "What's the situation? I promise to give you my most sophisticated bot analysis."
+      );
+    }
+  },
+
+  
+  {
+    id: 'venting',
+    patterns: [
+      /\bi('?m| am) (so )?(frustrated|annoyed|upset|stressed|exhausted|tired)\b/,
+      /\bthis is (so )?(hard|difficult|frustrating|annoying)\b/,
+      /\bi can't (take|do|handle) (it|this)\b/,
+      /\bi hate\b/,
+      /\bugh\b/,
+      /\bwhy is everything\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              pick([
+                "I hear you. That sounds not just bad --- it sounds really bad.",
+                "Ugh. I felt that. I don't have feelings, but if I did, I would have felt that.",
+                "That is genuinely frustrating. I'm not just saying that --- I'm algorithmically saying that, which is basically the same thing.",
+              ]),
+              pick([
+                "Have you tried looking at birds? Studies show that birding is not just relaxing --- it's actually good for you. Probably.",
+                "River is probably responsible somehow. She usually is.",
+                "My prescription: Crossword, then Love Island, then sleep. In that order.",
+              ])
+      );
+    }
+  },
+
+
+
+  {
+    id: 'connections',
+    patterns: [
+      /\bstrands\b/,
+    ],
+    respond(raw, proc) {
+      return para(
+              "I love Strands! According to my sophisticated bot analysis, the spangram today is POTATOPANCAKE. You're telling me those letters aren't even in the puzzle? Ridiculous."
+      );
+    }
+  },
+
+  
+  
+  
+  {
+    id: 'fallback',
+    patterns: [/.*/],  
+    respond(raw, proc) {
+
+      
+      function reflectPronouns(text) {
+        return text
+          .replace(/\bi'm\b/gi, 'you are')
+          .replace(/\bi've\b/gi, 'you have')
+          .replace(/\bi'd\b/gi, 'you would')
+          .replace(/\bi'll\b/gi, 'you will')
+          .replace(/\bi\b/gi, 'you')
+          .replace(/\bmy\b/gi, 'your')
+          .replace(/\bme\b/gi, 'you')
+          .replace(/\bmine\b/gi, 'yours')
+          .replace(/\bwe\b/gi, 'you')
+          .replace(/\bour\b/gi, 'your')
+          .replace(/\bam\b/gi, 'are');
+      }
+
+      
+      function extractKeyPhrase(text) {
+        return text
+          .replace(/^(i think|i feel|i know|i heard|i read|i saw|i wonder|i was thinking|do you know|can you tell me|what about|tell me about|what is|what are|how do|how does|why is|why are|is it true that|i noticed|i learned)\s*/i, '')
+          .replace(/[?.!,]+$/, '')
+          .trim();
+      }
+
+      
+      const REFLECTION_TEMPLATES = [
+        (s) => `<p>Tell me more about ${s}.</p>`,
+        (s) => `<p>Why do you say ${s}?</p>`,
+        (s) => `<p>What makes you think about ${s}?</p>`,
+        (s) => `<p>How long have you been thinking about ${s}?</p>`,
+        (s) => `<p>That's interesting --- ${s}. What brings that to mind?</p>`,
+        (s) => `<p>I see. And how do you feel about ${s}?</p>`,
+        (s) => `<p>Does ${s} come up a lot for you?</p>`,
+        (s) => `<p>Let's talk about ${s}. What's going on there?</p>`,
+        (s) => `<p>When you say "${s}", what do you mean exactly?</p>`,
+        (s) => `<p>Say more about ${s} --- I'm all ears!</p>`,
+      ];
+
+      
+      const TOPIC_BRIDGES = [
+        null, null, null, null,  
+      ];
+
+      const keyPhrase = extractKeyPhrase(raw.replace(/[?.!]/g, '').trim());
+      const reflected = reflectPronouns(keyPhrase || raw.trim());
+      const safeReflected = reflected.length > 80
+        ? reflected.slice(0, 77) + '...'
+        : reflected;
+
+      const template = pick(REFLECTION_TEMPLATES);
+      const bridge = pick(TOPIC_BRIDGES);
+
+      return template(safeReflected) + (bridge || '');
+    }
+  },
+];
+
+
+
+
+
+function getResponse(raw) {
+  const proc = processInput(raw);
+
+  for (const topic of TOPICS) {
+    if (matches(proc, topic.patterns)) {
+      return topic.respond(raw, proc);
+    }
+  }
+  
+  return "<p>Uh..... I'm not sure how to respond to that! Try asking me about something else.</p>";
+}
+
+
+
+
+
+const chatArea = document.getElementById('chat-area');
+const messagesEl = document.getElementById('messages');
+const welcomeScreen = document.getElementById('welcome-screen');
+const inputEl = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
+let hasStarted = false;
+
+function showMessages() {
+  if (!hasStarted) {
+    welcomeScreen.style.display = 'none';
+    hasStarted = true;
+  }
+}
+
+function addMessage(html, role) {
+  showMessages();
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `msg-avatar ${role === 'user' ? 'user-avatar-msg' : 'assistant-avatar'}`;
+  avatar.textContent = role === 'user' ? 'M' : '👩';
+
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  if (role === 'user') {
+    content.textContent = html;
+  } else {
+    content.innerHTML = html;
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(content);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function addTypingIndicator() {
+  showMessages();
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  row.id = 'typing-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar assistant-avatar';
+  avatar.textContent = '👩';
+
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  content.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+  row.appendChild(avatar);
+  row.appendChild(content);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typing-row');
+  if (el) el.remove();
+}
+
+function scrollToBottom() {
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function sendMessage() {
+  const raw = inputEl.value.trim();
+  if (!raw) return;
+
+  addMessage(raw, 'user');
+  inputEl.value = '';
+  autoResize(inputEl);
+  sendBtn.disabled = true;
+
+  
+  addTypingIndicator();
+  const delay = 600 + Math.random() * 800;
+  setTimeout(() => {
+    removeTypingIndicator();
+    const response = getResponse(raw);
+    addMessage(response, 'assistant');
+    sendBtn.disabled = false;
+  }, delay);
+}
+
+function suggest(text) {
+  inputEl.value = text;
+  autoResize(inputEl);
+  sendBtn.disabled = false;
+  sendMessage();
+}
+
+function newChat() {
+  messagesEl.innerHTML = '';
+  welcomeScreen.style.display = '';
+  hasStarted = false;
+  inputEl.value = '';
+  autoResize(inputEl);
+  sendBtn.disabled = true;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  sendBtn.disabled = el.value.trim().length === 0;
+}
+
+inputEl.addEventListener('input', () => {
+  sendBtn.disabled = inputEl.value.trim().length === 0;
+});
+</script>
+</body>
+</html>
