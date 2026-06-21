@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Father's Day!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --teal: #4ECDC4;
+            --sand: #F7E9D7;
+            --green: #5D8A3C;
+            --navy: #1a2744;
+            --yellow: #FFE234;
+            --court-bg: #8BC34A;
+            --court-line: #ffffff;
+            --pixel: 'Press Start 2P', monospace;
+        }
+
+        body {
+            background: var(--navy);
+            font-family: var(--pixel);
+            color: var(--sand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ─── SCREENS ─── */
+        .screen { display: none; width: 100vw; height: 100vh; }
+        .screen.active { display: flex; }
+
+        /* ─── CARD SCREEN ─── */
+        #card-screen {
+            align-items: center;
+            justify-content: center;
+            background: var(--navy);
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .card-wrapper {
+            perspective: 1200px;
+            width: min(700px, 92vw);
+        }
+
+        .card {
+            width: 100%;
+            background: var(--sand);
+            color: var(--navy);
+            border-radius: 4px;
+            padding: 36px 32px 28px;
+            transform-origin: center top;
+            animation: cardDrop 0.7s cubic-bezier(.23,1.3,.5,1) both;
+        }
+
+        @keyframes cardDrop {
+            from { transform: translateY(-60px) rotateX(20deg); opacity: 0; }
+            to   { transform: translateY(0) rotateX(0deg); opacity: 1; }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            border-bottom: 3px solid var(--navy);
+            padding-bottom: 14px;
+        }
+
+        .pickle-icon { font-size: 28px; }
+
+        .card-title {
+            font-family: var(--pixel);
+            font-size: clamp(7px, 2.2vw, 11px);
+            color: var(--green);
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        .card-message {
+            font-family: 'Georgia', serif;
+            font-size: clamp(13px, 2.5vw, 16px);
+            line-height: 1.8;
+            color: #2a1a0a;
+            margin-bottom: 24px;
+            min-height: 80px;
+            /* EDIT YOUR MESSAGE BELOW */
+        }
+
+        .card-signature {
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            font-size: clamp(12px, 2vw, 15px);
+            color: var(--green);
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .card-divider {
+            border: none;
+            border-top: 2px dashed #c8b89a;
+            margin: 0 0 20px;
+        }
+
+        .card-cta {
+            font-family: var(--pixel);
+            font-size: clamp(7px, 1.8vw, 9px);
+            color: #7a6a55;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .btn-start {
+            width: 100%;
+            background: var(--green);
+            color: var(--sand);
+            border: none;
+            padding: 14px 0;
+            font-family: var(--pixel);
+            font-size: clamp(8px, 2vw, 11px);
+            cursor: pointer;
+            border-radius: 2px;
+            box-shadow: 4px 4px 0 #2d4a1a;
+            transition: transform 0.08s, box-shadow 0.08s;
+            letter-spacing: 1px;
+        }
+        .btn-start:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 #2d4a1a; }
+        .btn-start:active { transform: translate(4px,4px); box-shadow: none; }
+
+        /* ─── GAME SCREEN ─── */
+        #game-screen {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--navy);
+            gap: 0;
+            position: relative;
+        }
+
+        #hud {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            font-size: clamp(6px, 1.5vw, 9px);
+            flex-shrink: 0;
+            background: #111e38;
+            border-bottom: 2px solid var(--teal);
+        }
+
+        .hud-side { display: flex; flex-direction: column; gap: 4px; }
+        .hud-label { color: var(--teal); font-size: 0.8em; }
+        .hud-score { color: var(--yellow); font-size: 1.4em; }
+        .hud-serve { color: var(--sand); font-size: 0.75em; }
+        .hud-center { text-align: center; }
+        .hud-game { color: var(--sand); font-size: 0.8em; }
+        .serve-indicator { color: var(--yellow); font-size: 1em; }
+
+        #court-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            cursor: none;
+            overflow: hidden;
+        }
+
+        #court {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .charge-bar-wrap {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 10px;
+            background: #0009;
+            border: 2px solid var(--sand);
+            display: none;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .charge-bar-fill {
+            height: 100%;
+            background: var(--yellow);
+            width: 0%;
+            transition: background 0.1s;
+        }
+
+        #power-label {
+            position: absolute;
+            bottom: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 7px;
+            color: var(--yellow);
+            display: none;
+            white-space: nowrap;
+        }
+
+        /* ─── END SCREENS ─── */
+        #win-screen, #loss-screen {
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .end-emoji { font-size: clamp(40px, 10vw, 72px); }
+
+        .end-title {
+            font-size: clamp(10px, 3vw, 18px);
+            color: var(--yellow);
+            line-height: 1.8;
+        }
+
+        .end-subtitle {
+            font-size: clamp(7px, 1.8vw, 10px);
+            color: var(--teal);
+            line-height: 2;
+        }
+
+        .btn-again {
+            background: var(--teal);
+            color: var(--navy);
+            border: none;
+            padding: 14px 28px;
+            font-family: var(--pixel);
+            font-size: clamp(7px, 1.8vw, 10px);
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #267570;
+            transition: transform 0.08s, box-shadow 0.08s;
+            letter-spacing: 1px;
+        }
+        .btn-again:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 #267570; }
+        .btn-again:active { transform: translate(4px,4px); box-shadow: none; }
+
+        #win-screen { background: radial-gradient(ellipse at center, #1a3a20 0%, var(--navy) 70%); }
+        #loss-screen { background: radial-gradient(ellipse at center, #3a1a1a 0%, var(--navy) 70%); }
+    </style>
+</head>
+<body>
+
+
+<div id="card-screen" class="screen active">
+    <div class="card-wrapper">
+        <div class="card">
+            <div class="card-header">
+                <span class="pickle-icon"></span>
+                <div class="card-title">HAPPY FATHER'S DAY!!!</div>
+            </div>
+
+            <p class="card-message">
+                Dad,<br><br>
+                You know, in many ways, parenting is a lot like pickleball: you're trying to stop me from having so many faults.
+                That may sound harsh, but it's just about the only way I could get that pun to work. Seriously, though: you are the best coach that I could ask for (if you'll forgive me muddling the metaphor).
+                <br><br>
+                You are the only reason I know what a capital gains tax is, know anything about the colonial Dutch history of New York City, and know that Bryson DeChambeau is a person and not some kind of French ornamental desk. You taught me the HTML tags that I'm currently writing, including <b>these</b> <i>fun</i> <small>ones</small>. At a time in my life when almost everything is changing, you provide invaluable counsel on just about anything. You inspire me to be a healthier, wiser, and more thoughtful person.
+                <br><br>
+
+                I hope you have an excellent Father's Day and I know you will continue to "serve" as a great dad for many more days after that.
+
+            </p>
+            <p class="card-signature">Love, Joshua</p>
+
+            <button class="btn-start" onclick="startGame()">PLAY PICKLEBALL</button>
+        </div>
+    </div>
+</div>
+
+<div id="game-screen" class="screen">
+    <div id="hud">
+        <div class="hud-side">
+            <span class="hud-label">DAD</span>
+            <span class="hud-score" id="score-player">0</span>
+            <span class="hud-serve" id="serve-player"></span>
+        </div>
+        <div class="hud-side hud-center">
+            <span class="hud-game" id="game-label">GAME 1</span>
+            <span class="serve-indicator" id="serve-label">🏓 YOUR SERVE</span>
+        </div>
+        <div class="hud-side" style="align-items:flex-end">
+            <span class="hud-label">CPU</span>
+            <span class="hud-score" id="score-cpu">0</span>
+            <span class="hud-serve" id="serve-cpu"></span>
+        </div>
+    </div>
+    <div id="court-container">
+        <canvas id="court"></canvas>
+        <div class="charge-bar-wrap" id="charge-wrap">
+            <div class="charge-bar-fill" id="charge-fill"></div>
+        </div>
+        <div id="power-label">POWER</div>
+    </div>
+</div>
+
+<div id="win-screen" class="screen">
+    <div class="end-emoji">🏆</div>
+    <div class="end-title">DAD WINS!<br>MATCH POINT!</div>
+    <div class="end-subtitle" id="win-stats">Score: 11 – 0</div>
+    <button class="btn-again" onclick="resetGame()">▶ PLAY AGAIN</button>
+</div>
+
+<div id="loss-screen" class="screen">
+    <div class="end-emoji">😅</div>
+    <div class="end-title">CPU WINS<br>THIS TIME...</div>
+    <div class="end-subtitle" id="loss-stats">Score: 0 – 11</div>
+    <button class="btn-again" onclick="resetGame()">▶ TRY AGAIN</button>
+</div>
+
+<script>
+
+
+    const dadNormal = new Image(16, 32)
+    dadNormal.src = "imgs/dad.png"
+
+    const dadSwing = new Image(16, 32)
+    dadSwing.src = "imgs/dad-swing.png"
+
+    const cpuNormal = new Image(16, 32)
+    cpuNormal.src = "imgs/cpu.png"
+
+
+    const cpuSwing = new Image(16, 32)
+    cpuSwing.src = "imgs/cpu-swing.png"
+
+        const ballSprite = new Image(16, 16)
+    ballSprite.src = 'imgs/pickleball.png';
+
+                const canvas = document.getElementById('court');
+    const ctx2d   = canvas.getContext('2d');
+    ctx2d.imageSmoothingEnabled = false;
+
+    const SPRITE_SCALE = 3;
+    const BALL_SCALE   = 3;
+    const SPRITE_W = 16 * SPRITE_SCALE;
+    const SPRITE_H = 20 * SPRITE_SCALE;
+    const BALL_W   = 8  * BALL_SCALE;
+
+    let W, H; 
+        const COURT = {
+        margin: 0.05,         netY: 0.5,            kitchenH: 0.12,     };
+
+        const STATE = {
+        CARD: 0, SERVE: 1, RALLY: 2, POINT_END: 3, GAME_OVER: 4
+    };
+
+    let gameState;
+    let scorePlayer, scoreCpu;
+    let serving;     let serveCount; 
+    let ball, player, cpu;
+    let mouseX, mouseY;
+    let swingTimer = 0;
+    let cpuSwingTimer = 0;
+    let pointEndTimer = 0;
+    let gameOver = false;
+
+    let animId;
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    function initSizes() {
+        const container = document.getElementById('court-container');
+        W = container.clientWidth;
+        H = container.clientHeight;
+        canvas.width  = W;
+        canvas.height = H;
+        ctx2d.imageSmoothingEnabled = false;
+    }
+
+    function courtBounds() {
+        const mx = W * COURT.margin;
+        return {
+            left:   mx,
+            right:  W - mx,
+            top:    H * 0.04,
+            bottom: H * 0.96,
+            netY:   H * COURT.netY,
+            kitchenTop:    H * (COURT.netY + 0.01),
+            kitchenBottom: H * (COURT.netY + COURT.kitchenH),
+            cpuKitchenTop:    H * (COURT.netY - COURT.kitchenH - 0.01),
+            cpuKitchenBottom: H * (COURT.netY - 0.01),
+        };
+    }
+
+    function playerBounds() {
+        const b = courtBounds();
+        return {
+            left:   b.left   + SPRITE_W/2,
+            right:  b.right  - SPRITE_W/2,
+            top:    b.kitchenBottom,                  bottom: b.bottom - SPRITE_H/2,
+        };
+    }
+
+    function resetBall(server) {
+        const b = courtBounds();
+                        if (server === 'player') {
+            ball = { x: W/2, y: b.bottom - 60, z: 0,
+                vx: 0, vy: 0, vz: 0,
+                inPlay: false, bounces: 0, lastHit: 'player' };
+        } else {
+            ball = { x: W/2, y: b.top + 60, z: 0,
+                vx: 0, vy: 0, vz: 0,
+                inPlay: false, bounces: 0, lastHit: 'cpu' };
+        }
+    }
+
+    function startGame() {
+        showScreen('game-screen');
+        initSizes();
+        scorePlayer = 0;
+        scoreCpu    = 0;
+        serving     = 'player';
+        serveCount  = 0;
+        gameOver    = false;
+        resetRound();
+        updateHUD();
+        if (animId) cancelAnimationFrame(animId);
+        loop();
+    }
+
+    function resetRound() {
+        const b = courtBounds();
+        const pb = playerBounds();
+
+        player = {
+            x: W/2,
+            y: b.bottom - SPRITE_H,
+            swinging: false,
+        };
+
+        cpu = {
+            x: W/2,
+            y: b.top + SPRITE_H,
+            swinging: false,
+            targetX: W/2,
+            speed: 3.5,
+            hitCooldown: 0,
+        };
+
+        resetBall(serving);
+        gameState = STATE.SERVE;
+        swingTimer = 0;
+        cpuSwingTimer = 0;
+    }
+
+                        function awardPoint(winner) {
+        if (gameOver) return;
+
+                if (winner === 'player') {
+            scorePlayer++;
+            serving = 'player';
+        } else {
+            scoreCpu++;
+            serving = 'cpu';
+        }
+
+        updateHUD();
+        checkWin();
+        if (!gameOver) {
+            gameState = STATE.POINT_END;
+            pointEndTimer = 90;
+        }
+    }
+
+    function checkWin() {
+        const need = 11;
+        if (scorePlayer >= need && scorePlayer - scoreCpu >= 2) {
+            endGame('player');
+        } else if (scoreCpu >= need && scoreCpu - scorePlayer >= 2) {
+            endGame('cpu');
+        }
+    }
+
+    function endGame(winner) {
+        gameOver = true;
+        cancelAnimationFrame(animId);
+        setTimeout(() => {
+            if (winner === 'player') {
+                document.getElementById('win-stats').textContent = `${scorePlayer} – ${scoreCpu}`;
+                showScreen('win-screen');
+            } else {
+                document.getElementById('loss-stats').textContent = `${scorePlayer} – ${scoreCpu}`;
+                showScreen('loss-screen');
+            }
+        }, 600);
+    }
+
+    function resetGame() {
+        showScreen('card-screen');
+    }
+
+    function updateHUD() {
+        document.getElementById('score-player').textContent = scorePlayer;
+        document.getElementById('score-cpu').textContent    = scoreCpu;
+        document.getElementById('serve-label').textContent  =
+            serving === 'player' ? 'DAD SERVES' : 'CPU SERVES';
+    }
+
+                document.getElementById('court-container').addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+    document.getElementById('court-container').addEventListener('mousedown', (e) => {
+        if (gameOver) return;
+        if (gameState === STATE.SERVE && serving === 'player') { serveBall('player'); return; }
+        if (gameState === STATE.RALLY) tryPlayerHit();
+    });
+
+        document.getElementById('court-container').addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const t = e.touches[0];
+        mouseX = t.clientX - rect.left;
+        mouseY = t.clientY - rect.top;
+    }, { passive: false });
+
+    document.getElementById('court-container').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const t = e.touches[0];
+        mouseX = t.clientX - rect.left;
+        mouseY = t.clientY - rect.top;
+        if (gameState === STATE.SERVE && serving === 'player') { serveBall('player'); return; }
+        if (gameState === STATE.RALLY) tryPlayerHit();
+    }, { passive: false });
+
+                const GRAVITY = 0.18;
+    const BOUNCE  = 0.55;
+
+    function launchBall(targetX, targetY, tof) {
+                        ball.vx = (targetX - ball.x) / tof;
+        ball.vy = (targetY - ball.y) / tof;
+        ball.vz = 0.5 * GRAVITY * tof;         ball.z  = 0;
+        ball.inPlay = true;
+        ball.bounces = 0;
+    }
+
+    function serveBall(who) {
+        const b = courtBounds();
+        gameState = STATE.RALLY;
+        if (who === 'player') {
+            const tx = b.left + (b.right - b.left) * (0.1 + Math.random() * 0.5);
+            const ty = b.cpuKitchenTop + (b.cpuKitchenBottom - b.cpuKitchenTop) * (0.1 + Math.random() * 0.5);
+            ball.lastHit = 'player';
+            launchBall(tx, ty, 34);
+
+            ball.vx += player.vx * 0.4;
+            ball.vy += player.vy * 0.4;
+        } else {
+            const tx = b.left + (b.right - b.left) * (0.25 + Math.random() * 0.5);
+            const ty = b.kitchenBottom + (b.bottom - b.kitchenBottom) * (0.2 + Math.random() * 0.5);
+            ball.lastHit = 'cpu';
+            launchBall(tx, ty, 34);
+        }
+    }
+
+    function tryPlayerHit() {
+        if (!ball.inPlay) return;
+        const b = courtBounds();
+        const dist = Math.hypot(ball.x - player.x, ball.y - player.y);
+        if (dist > SPRITE_W * 1.8) return;
+        if (ball.y < b.netY) return;
+
+        const tof = 24;
+                const tx = b.left + (b.right - b.left) * (0.2 + Math.random() * 0.6);
+        const ty = b.cpuKitchenTop + (b.cpuKitchenBottom - b.cpuKitchenTop) * (0.3 + Math.random() * 0.5);
+
+        ball.lastHit = 'player';
+        ball.bounces = 0;
+        launchBall(tx, ty, tof);
+
+                ball.vx += player.vx * 0.4;
+        ball.vy += player.vy * 0.4;
+        ball.vz += 7;
+
+        swingTimer = 20;
+        player.swinging = true;
+    }
+
+    function cpuAI() {
+        const b = courtBounds();
+        if (!ball.inPlay) return;
+
+                if (ball.y < b.netY) {
+            const tx = clamp(ball.x + ball.vx * 5, b.left + SPRITE_W/2, b.right - SPRITE_W/2);
+            cpu.x += clamp(tx - cpu.x, -cpu.speed, cpu.speed);
+        }
+        cpu.y = clamp(cpu.y, b.top + SPRITE_H/2, b.netY - SPRITE_H - 5);
+
+        if (cpu.hitCooldown > 0) { cpu.hitCooldown--; return; }
+        if (ball.y >= b.netY) return;
+        if (ball.lastHit === 'cpu') return;
+
+        const dist = Math.hypot(ball.x - cpu.x, ball.y - cpu.y);
+        if (dist < SPRITE_W * 1.8 && ball.z < SPRITE_H) {
+            const tx = b.left + (b.right - b.left) * (0.2 + Math.random() * 0.6);
+            const ty = b.kitchenBottom + (b.bottom - b.kitchenBottom) * (0.1 + Math.random() * 0.7);
+            const tof = 24 + Math.random() * 12;
+            ball.lastHit = 'cpu';
+            ball.bounces = 0;
+            launchBall(tx, ty, tof);
+            ball.vz += 5;
+            cpu.swinging = true;
+            cpuSwingTimer = 20;
+            cpu.hitCooldown = 25;
+        }
+    }
+
+    function updateBall() {
+        if (!ball.inPlay) return;
+        const b = courtBounds();
+
+                                const NET_HEIGHT = 18; 
+        const prevY = ball.y;
+
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        ball.vz -= GRAVITY;           ball.z  += ball.vz;
+
+                if (ball.x < b.left  + BALL_W/2) { ball.x = b.left  + BALL_W/2; ball.vx *= -0.7; }
+        if (ball.x > b.right - BALL_W/2) { ball.x = b.right - BALL_W/2; ball.vx *= -0.7; }
+
+                if (ball.z <= 0 && ball.vz < 0) {
+            ball.z  = 0;
+            ball.vz *= -BOUNCE;
+            ball.vx *= 0.88;
+            ball.vy *= 0.88;
+            ball.bounces++;
+            if (ball.bounces >= 2) {
+                                awardPoint(ball.lastHit === 'player' ? 'cpu' : 'player');
+                return;
+            }
+        }
+
+                const crossedNet = (prevY < b.netY) !== (ball.y < b.netY);
+        if (crossedNet) {
+            if (ball.z < NET_HEIGHT) {
+                                awardPoint(ball.lastHit === 'player' ? 'cpu' : 'player');
+                return;
+            }
+                        ball.bounces = 0;
+            ball.lastHit = ball.lastHit;         }
+
+                if (ball.y > b.bottom + 60) { awardPoint('cpu');    return; }
+        if (ball.y < b.top    - 60) { awardPoint('player'); return; }
+    }
+
+
+    function updatePlayer() {
+        if (mouseX === undefined) return;
+        const pb = playerBounds();
+        const b  = courtBounds();
+        const tx = clamp(mouseX, pb.left, pb.right);
+        const ty = clamp(mouseY, pb.top, pb.bottom);
+        const prevX = player.x;
+        const prevY = player.y;
+        player.x += (tx - player.x) * 0.25;
+        player.y += (ty - player.y) * 0.25;
+                player.vx = player.x - prevX;
+        player.vy = player.y - prevY;
+
+        if (swingTimer > 0) {
+            swingTimer--;
+            player.swinging = swingTimer > 0;
+        }
+    }
+
+                function drawCourt() {
+        const b = courtBounds();
+
+        ctx2d.lineWidth = 4;
+
+                ctx2d.fillStyle = '#5a9e3a';
+        ctx2d.fillRect(0, 0, W, H);
+
+                ctx2d.fillStyle = '#6aaf47';
+        ctx2d.fillRect(b.left, b.top, b.right - b.left, b.bottom - b.top);
+
+                ctx2d.fillStyle = '#4a8f8f';
+        ctx2d.fillRect(b.left+2, b.top+2, b.right - b.left - 4, b.bottom - b.top - 4);
+
+                ctx2d.fillStyle = '#3a7a7a';
+        ctx2d.fillRect(b.left+2, b.kitchenTop, b.right - b.left - 4, b.kitchenBottom - b.kitchenTop);
+
+                ctx2d.fillStyle = '#3a7a7a';
+        ctx2d.fillRect(b.left+2, b.cpuKitchenTop, b.right - b.left - 4, b.cpuKitchenBottom - b.cpuKitchenTop);
+
+                ctx2d.strokeStyle = '#fff';
+        ctx2d.lineWidth = 4;
+
+                ctx2d.strokeRect(b.left+2, b.top+2, b.right-b.left-4, b.bottom-b.top-4);
+
+                ctx2d.beginPath();
+        ctx2d.moveTo(W/2, b.top+2);
+        ctx2d.lineTo(W/2, b.netY - 3);
+        ctx2d.moveTo(W/2, b.netY + 3);
+        ctx2d.lineTo(W/2, b.bottom-2);
+        ctx2d.stroke();
+
+                ctx2d.beginPath();
+        ctx2d.moveTo(b.left+2, b.kitchenBottom);
+        ctx2d.lineTo(b.right-2, b.kitchenBottom);
+        ctx2d.moveTo(b.left+2, b.cpuKitchenTop);
+        ctx2d.lineTo(b.right-2, b.cpuKitchenTop);
+        ctx2d.stroke();
+
+                ctx2d.fillStyle = '#ddd';
+        ctx2d.fillRect(b.left, b.netY - 2, b.right - b.left, 4);
+                ctx2d.fillStyle = '#aaa';
+        ctx2d.fillRect(b.left-4,  b.netY - 8, 4, 16);
+        ctx2d.fillRect(b.right, b.netY - 8, 4, 16);
+                ctx2d.strokeStyle = '#bbb';
+        ctx2d.lineWidth = 0.5;
+        for (let nx = b.left; nx < b.right; nx += 12) {
+            ctx2d.beginPath();
+            ctx2d.moveTo(nx, b.netY - 2);
+            ctx2d.lineTo(nx, b.netY + 2);
+            ctx2d.stroke();
+        }
+    }
+
+    function drawSprite(sprite, cx, cy) {
+        const dw = sprite.width  * SPRITE_SCALE;
+        const dh = sprite.height * SPRITE_SCALE;
+        ctx2d.drawImage(sprite, cx - dw/2, cy - dh/2, dw, dh);
+    }
+
+    function drawBall() {
+        if (!ball.inPlay) return;
+
+                        
+        const maxZ = 120;
+        const t = clamp(ball.z / maxZ, 0, 1);
+        const shadowAlpha = 0.55;
+        const shadowRx = BALL_W * 0.55;
+        const shadowRy = shadowRx * 0.38;
+
+        ctx2d.save();
+        ctx2d.globalAlpha = shadowAlpha;
+        ctx2d.fillStyle = '#000';
+        ctx2d.beginPath();
+        ctx2d.ellipse(ball.x, ball.y, shadowRx, shadowRy, 0, 0, Math.PI * 2);
+        ctx2d.fill();
+        ctx2d.restore();
+
+                ctx2d.drawImage(ballSprite,
+            ball.x - BALL_W/2,
+            ball.y - ball.z - BALL_W/2,
+            BALL_W, BALL_W);
+    }
+
+    function drawServePrompt() {
+        ctx2d.save();
+        ctx2d.globalAlpha = 0.85;
+        ctx2d.fillStyle = '#1a2744';
+        ctx2d.fillRect(W/2 - 130, H/2 - 22, 260, 44);
+        ctx2d.globalAlpha = 1;
+        ctx2d.fillStyle = '#FFE234';
+        ctx2d.font = '9px "Press Start 2P"';
+        ctx2d.textAlign = 'center';
+        const msg = serving === 'player' ? 'CLICK TO SERVE' : 'CPU IS SERVING...';
+        ctx2d.fillText(msg, W/2, H/2 + 4);
+        ctx2d.restore();
+
+        if (serving === 'cpu' && gameState === STATE.SERVE) {
+                        setTimeout(() => {
+                if (gameState === STATE.SERVE && serving === 'cpu') {
+                    serveBall('cpu');
+                }
+            }, 1200);
+        }
+    }
+
+                let serveAutoFired = false;
+    let then = 0;
+
+    function loop() {
+        if (gameOver) return;
+        animId = requestAnimationFrame(loop);
+
+        now = Date.now();
+        elapsed = now - then;
+
+        if (elapsed > 10) {
+            then = now;
+        } else {
+            return;
+        }
+
+        if (gameState === STATE.POINT_END) {
+            pointEndTimer--;
+            if (pointEndTimer <= 0) {
+                resetRound();
+                serveAutoFired = false;
+            }
+        }
+
+        if (gameState === STATE.SERVE) {
+            if (serving === 'cpu' && !serveAutoFired) {
+                serveAutoFired = true;
+                setTimeout(() => {
+                    if (gameState === STATE.SERVE && serving === 'cpu') {
+                        serveBall('cpu');
+                        serveAutoFired = false;
+                    }
+                }, 1400);
+            }
+        }
+
+        if (gameState === STATE.RALLY) {
+            updatePlayer();
+            cpuAI();
+            updateBall();
+            if (cpuSwingTimer > 0) {
+                cpuSwingTimer--;
+                cpu.swinging = cpuSwingTimer > 0;
+            }
+        } else if (gameState === STATE.SERVE) {
+            updatePlayer();
+        }
+
+                drawCourt();
+
+                drawSprite(cpu.swinging ? cpuSwing : cpuNormal, cpu.x, cpu.y);
+        drawSprite(player.swinging ? dadSwing : dadNormal, player.x, player.y);
+        drawBall();
+
+                if (gameState === STATE.SERVE) {
+            drawServePrompt();
+        }
+
+        if (gameState === STATE.SERVE && serving === 'player') {
+            ball.x = player.x + SPRITE_W*0.3;
+            ball.y = player.y - SPRITE_H*0.3;
+            ball.z = 0;
+            ctx2d.drawImage(ballSprite, ball.x - BALL_W/2, ball.y - BALL_W/2, BALL_W, BALL_W);
+        }
+
+                if (gameState === STATE.RALLY) {
+            const b = courtBounds();
+            const dist = Math.hypot(ball.x - player.x, ball.y - player.y);
+        }
+
+                if (gameState === STATE.POINT_END) {
+            const alpha = clamp(pointEndTimer / 60 * 0.4, 0, 0.4);
+            ctx2d.save();
+            ctx2d.globalAlpha = alpha;
+            ctx2d.fillStyle = '#FFE234';
+            ctx2d.fillRect(0, 0, W, H);
+            ctx2d.restore();
+
+            ctx2d.save();
+            ctx2d.font = '12px "Press Start 2P"';
+            ctx2d.textAlign = 'center';
+            ctx2d.fillStyle = '#1a2744';
+            ctx2d.fillText('POINT!', W/2 + 1, H/2 + 1);
+            ctx2d.fillStyle = '#FFE234';
+            ctx2d.fillText('POINT!', W/2, H/2);
+            ctx2d.restore();
+        }
+    }
+
+                function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    window.startGame = startGame;
+    window.resetGame = resetGame;
+
+    window.addEventListener('resize', () => {
+        if (document.getElementById('game-screen').classList.contains('active')) {
+            initSizes();
+        }
+    });
+</script>
+</body>
+</html>
