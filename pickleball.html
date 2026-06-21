@@ -324,8 +324,6 @@
 </div>
 
 <script>
-
-
     const dadNormal = new Image(16, 32)
     dadNormal.src = "imgs/dad.png"
 
@@ -335,14 +333,13 @@
     const cpuNormal = new Image(16, 32)
     cpuNormal.src = "imgs/cpu.png"
 
-
     const cpuSwing = new Image(16, 32)
     cpuSwing.src = "imgs/cpu-swing.png"
 
-        const ballSprite = new Image(16, 16)
+    const ballSprite = new Image(16, 16)
     ballSprite.src = 'imgs/pickleball.png';
 
-                const canvas = document.getElementById('court');
+    const canvas = document.getElementById('court');
     const ctx2d   = canvas.getContext('2d');
     ctx2d.imageSmoothingEnabled = false;
 
@@ -352,17 +349,17 @@
     const SPRITE_H = 20 * SPRITE_SCALE;
     const BALL_W   = 8  * BALL_SCALE;
 
-    let W, H; 
-        const COURT = {
+    let W, H;
+    const COURT = {
         margin: 0.05,         netY: 0.5,            kitchenH: 0.12,     };
 
-        const STATE = {
+    const STATE = {
         CARD: 0, SERVE: 1, RALLY: 2, POINT_END: 3, GAME_OVER: 4
     };
 
     let gameState;
     let scorePlayer, scoreCpu;
-    let serving;     let serveCount; 
+    let serving;     let serveCount;
     let ball, player, cpu;
     let mouseX, mouseY;
     let swingTimer = 0;
@@ -409,12 +406,12 @@
 
     function resetBall(server) {
         const b = courtBounds();
-                        if (server === 'player') {
-            ball = { x: W/2, y: b.bottom - 60, z: 0,
+        if (server === 'player') {
+            ball = { x: player.x, y: b.bottom - 60, z: 0,
                 vx: 0, vy: 0, vz: 0,
                 inPlay: false, bounces: 0, lastHit: 'player' };
         } else {
-            ball = { x: W/2, y: b.top + 60, z: 0,
+            ball = { x: cpu.x, y: b.top + 60, z: 0,
                 vx: 0, vy: 0, vz: 0,
                 inPlay: false, bounces: 0, lastHit: 'cpu' };
         }
@@ -436,20 +433,36 @@
 
     function resetRound() {
         const b = courtBounds();
-        const pb = playerBounds();
+        const midX = W / 2;
+
+        // Determine left/right placement on service alignment based on even/odd rules
+        let playerStartX = midX + (W * 0.2); // Right side
+        let cpuStartX = midX - (W * 0.2);    // Opposite diagonal side
+
+        if (serving === 'player') {
+            if (scorePlayer % 2 !== 0) { // Odd score: Serve from Left to Left
+                playerStartX = midX - (W * 0.2);
+                cpuStartX = midX + (W * 0.2);
+            }
+        } else {
+            if (scoreCpu % 2 !== 0) { // Odd score: CPU serves from Left to Left
+                cpuStartX = midX + (W * 0.2);
+                playerStartX = midX - (W * 0.2);
+            }
+        }
 
         player = {
-            x: W/2,
+            x: playerStartX,
             y: b.bottom - SPRITE_H,
             swinging: false,
         };
 
         cpu = {
-            x: W/2,
+            x: cpuStartX,
             y: b.top + SPRITE_H,
             swinging: false,
-            targetX: W/2,
-            speed: 3.5,
+            targetX: cpuStartX,
+            speed: 2.5,
             hitCooldown: 0,
         };
 
@@ -459,14 +472,18 @@
         cpuSwingTimer = 0;
     }
 
-                        function awardPoint(winner) {
+    function awardPoint(winner) {
         if (gameOver) return;
 
-                if (winner === 'player') {
-            scorePlayer++;
+        if (winner === 'player') {
+            if (serving === 'player') {
+                scorePlayer++;
+            }
             serving = 'player';
         } else {
-            scoreCpu++;
+            if (winner === 'cpu') {
+                scoreCpu++;
+            }
             serving = 'cpu';
         }
 
@@ -512,7 +529,7 @@
             serving === 'player' ? 'DAD SERVES' : 'CPU SERVES';
     }
 
-                document.getElementById('court-container').addEventListener('mousemove', (e) => {
+    document.getElementById('court-container').addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         mouseY = e.clientY - rect.top;
@@ -524,7 +541,7 @@
         if (gameState === STATE.RALLY) tryPlayerHit();
     });
 
-        document.getElementById('court-container').addEventListener('touchmove', (e) => {
+    document.getElementById('court-container').addEventListener('touchmove', (e) => {
         e.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const t = e.touches[0];
@@ -542,11 +559,11 @@
         if (gameState === STATE.RALLY) tryPlayerHit();
     }, { passive: false });
 
-                const GRAVITY = 0.18;
+    const GRAVITY = 0.18;
     const BOUNCE  = 0.55;
 
     function launchBall(targetX, targetY, tof) {
-                        ball.vx = (targetX - ball.x) / tof;
+        ball.vx = (targetX - ball.x) / tof;
         ball.vy = (targetY - ball.y) / tof;
         ball.vz = 0.5 * GRAVITY * tof;         ball.z  = 0;
         ball.inPlay = true;
@@ -555,18 +572,38 @@
 
     function serveBall(who) {
         const b = courtBounds();
+        const midX = W / 2;
         gameState = STATE.RALLY;
+
         if (who === 'player') {
-            const tx = b.left + (b.right - b.left) * (0.1 + Math.random() * 0.5);
-            const ty = b.cpuKitchenTop + (b.cpuKitchenBottom - b.cpuKitchenTop) * (0.1 + Math.random() * 0.5);
+            let tx;
+            // Even Score: Serve from Right court to CPU's Right court (Screen Left side)
+            if (scorePlayer % 2 === 0) {
+                tx = b.left + Math.random() * (midX - b.left - 10);
+            } else {
+                // Odd Score: Serve from Left court to CPU's Left court (Screen Right side)
+                tx = midX + 10 + Math.random() * (b.right - midX - 10);
+            }
+            // Force service depth to safely pass deep behind the CPU's kitchen line
+            const ty = b.top + Math.random() * (b.cpuKitchenTop - b.top - 10);
+
             ball.lastHit = 'player';
             launchBall(tx, ty, 34);
 
             ball.vx += player.vx * 0.4;
             ball.vy += player.vy * 0.4;
         } else {
-            const tx = b.left + (b.right - b.left) * (0.25 + Math.random() * 0.5);
-            const ty = b.kitchenBottom + (b.bottom - b.kitchenBottom) * (0.2 + Math.random() * 0.5);
+            let tx;
+            // Even Score: CPU serves from Right court (Screen Left) to Player's Right court (Screen Right)
+            if (scoreCpu % 2 === 0) {
+                tx = midX + 10 + Math.random() * (b.right - midX - 10);
+            } else {
+                // Odd Score: CPU serves from Left court (Screen Right) to Player's Left court (Screen Left)
+                tx = b.left + Math.random() * (midX - b.left - 10);
+            }
+            // Force service depth to safely pass deep behind the Player's kitchen line
+            const ty = b.kitchenBottom + 10 + Math.random() * (b.bottom - b.kitchenBottom - 20);
+
             ball.lastHit = 'cpu';
             launchBall(tx, ty, 34);
         }
@@ -580,14 +617,14 @@
         if (ball.y < b.netY) return;
 
         const tof = 24;
-                const tx = b.left + (b.right - b.left) * (0.2 + Math.random() * 0.6);
+        const tx = b.left + (b.right - b.left) * (0.2 + Math.random() * 0.6);
         const ty = b.cpuKitchenTop + (b.cpuKitchenBottom - b.cpuKitchenTop) * (0.3 + Math.random() * 0.5);
 
         ball.lastHit = 'player';
         ball.bounces = 0;
         launchBall(tx, ty, tof);
 
-                ball.vx += player.vx * 0.4;
+        ball.vx += player.vx * 0.4;
         ball.vy += player.vy * 0.4;
         ball.vz += 7;
 
@@ -599,7 +636,7 @@
         const b = courtBounds();
         if (!ball.inPlay) return;
 
-                if (ball.y < b.netY) {
+        if (ball.y < b.netY) {
             const tx = clamp(ball.x + ball.vx * 5, b.left + SPRITE_W/2, b.right - SPRITE_W/2);
             cpu.x += clamp(tx - cpu.x, -cpu.speed, cpu.speed);
         }
@@ -617,7 +654,6 @@
             ball.lastHit = 'cpu';
             ball.bounces = 0;
             launchBall(tx, ty, tof);
-            ball.vz += 5;
             cpu.swinging = true;
             cpuSwingTimer = 20;
             cpu.hitCooldown = 25;
@@ -628,41 +664,38 @@
         if (!ball.inPlay) return;
         const b = courtBounds();
 
-                                const NET_HEIGHT = 18; 
+        const NET_HEIGHT = 10;
         const prevY = ball.y;
 
         ball.x += ball.vx;
         ball.y += ball.vy;
-        ball.vz -= GRAVITY;           ball.z  += ball.vz;
+        ball.vz -= GRAVITY;
+        ball.z  += ball.vz;
 
-                if (ball.x < b.left  + BALL_W/2) { ball.x = b.left  + BALL_W/2; ball.vx *= -0.7; }
-        if (ball.x > b.right - BALL_W/2) { ball.x = b.right - BALL_W/2; ball.vx *= -0.7; }
-
-                if (ball.z <= 0 && ball.vz < 0) {
+        if (ball.z <= 0 && ball.vz < 0) {
             ball.z  = 0;
             ball.vz *= -BOUNCE;
             ball.vx *= 0.88;
             ball.vy *= 0.88;
             ball.bounces++;
             if (ball.bounces >= 2) {
-                                awardPoint(ball.lastHit === 'player' ? 'cpu' : 'player');
+                awardPoint(ball.lastHit === 'player' ? 'player' : 'cpu');
                 return;
             }
         }
 
-                const crossedNet = (prevY < b.netY) !== (ball.y < b.netY);
+        const crossedNet = (prevY < b.netY) !== (ball.y < b.netY);
         if (crossedNet) {
             if (ball.z < NET_HEIGHT) {
-                                awardPoint(ball.lastHit === 'player' ? 'cpu' : 'player');
+                awardPoint(ball.lastHit === 'player' ? 'cpu' : 'player');
                 return;
             }
-                        ball.bounces = 0;
-            ball.lastHit = ball.lastHit;         }
+            ball.bounces = 0;
+        }
 
-                if (ball.y > b.bottom + 60) { awardPoint('cpu');    return; }
+        if (ball.y > b.bottom + 60) { awardPoint('cpu');    return; }
         if (ball.y < b.top    - 60) { awardPoint('player'); return; }
     }
-
 
     function updatePlayer() {
         if (mouseX === undefined) return;
@@ -674,7 +707,7 @@
         const prevY = player.y;
         player.x += (tx - player.x) * 0.25;
         player.y += (ty - player.y) * 0.25;
-                player.vx = player.x - prevX;
+        player.vx = player.x - prevX;
         player.vy = player.y - prevY;
 
         if (swingTimer > 0) {
@@ -683,51 +716,51 @@
         }
     }
 
-                function drawCourt() {
+    function drawCourt() {
         const b = courtBounds();
 
         ctx2d.lineWidth = 4;
 
-                ctx2d.fillStyle = '#5a9e3a';
+        ctx2d.fillStyle = '#5a9e3a';
         ctx2d.fillRect(0, 0, W, H);
 
-                ctx2d.fillStyle = '#6aaf47';
+        ctx2d.fillStyle = '#6aaf47';
         ctx2d.fillRect(b.left, b.top, b.right - b.left, b.bottom - b.top);
 
-                ctx2d.fillStyle = '#4a8f8f';
+        ctx2d.fillStyle = '#4a8f8f';
         ctx2d.fillRect(b.left+2, b.top+2, b.right - b.left - 4, b.bottom - b.top - 4);
 
-                ctx2d.fillStyle = '#3a7a7a';
+        ctx2d.fillStyle = '#3a7a7a';
         ctx2d.fillRect(b.left+2, b.kitchenTop, b.right - b.left - 4, b.kitchenBottom - b.kitchenTop);
 
-                ctx2d.fillStyle = '#3a7a7a';
+        ctx2d.fillStyle = '#3a7a7a';
         ctx2d.fillRect(b.left+2, b.cpuKitchenTop, b.right - b.left - 4, b.cpuKitchenBottom - b.cpuKitchenTop);
 
-                ctx2d.strokeStyle = '#fff';
+        ctx2d.strokeStyle = '#fff';
         ctx2d.lineWidth = 4;
 
-                ctx2d.strokeRect(b.left+2, b.top+2, b.right-b.left-4, b.bottom-b.top-4);
+        ctx2d.strokeRect(b.left+2, b.top+2, b.right-b.left-4, b.bottom-b.top-4);
 
-                ctx2d.beginPath();
+        ctx2d.beginPath();
         ctx2d.moveTo(W/2, b.top+2);
         ctx2d.lineTo(W/2, b.netY - 3);
         ctx2d.moveTo(W/2, b.netY + 3);
         ctx2d.lineTo(W/2, b.bottom-2);
         ctx2d.stroke();
 
-                ctx2d.beginPath();
+        ctx2d.beginPath();
         ctx2d.moveTo(b.left+2, b.kitchenBottom);
         ctx2d.lineTo(b.right-2, b.kitchenBottom);
         ctx2d.moveTo(b.left+2, b.cpuKitchenTop);
         ctx2d.lineTo(b.right-2, b.cpuKitchenTop);
         ctx2d.stroke();
 
-                ctx2d.fillStyle = '#ddd';
+        ctx2d.fillStyle = '#ddd';
         ctx2d.fillRect(b.left, b.netY - 2, b.right - b.left, 4);
-                ctx2d.fillStyle = '#aaa';
+        ctx2d.fillStyle = '#aaa';
         ctx2d.fillRect(b.left-4,  b.netY - 8, 4, 16);
         ctx2d.fillRect(b.right, b.netY - 8, 4, 16);
-                ctx2d.strokeStyle = '#bbb';
+        ctx2d.strokeStyle = '#bbb';
         ctx2d.lineWidth = 0.5;
         for (let nx = b.left; nx < b.right; nx += 12) {
             ctx2d.beginPath();
@@ -746,7 +779,6 @@
     function drawBall() {
         if (!ball.inPlay) return;
 
-                        
         const maxZ = 120;
         const t = clamp(ball.z / maxZ, 0, 1);
         const shadowAlpha = 0.55;
@@ -761,7 +793,7 @@
         ctx2d.fill();
         ctx2d.restore();
 
-                ctx2d.drawImage(ballSprite,
+        ctx2d.drawImage(ballSprite,
             ball.x - BALL_W/2,
             ball.y - ball.z - BALL_W/2,
             BALL_W, BALL_W);
@@ -779,17 +811,9 @@
         const msg = serving === 'player' ? 'CLICK TO SERVE' : 'CPU IS SERVING...';
         ctx2d.fillText(msg, W/2, H/2 + 4);
         ctx2d.restore();
-
-        if (serving === 'cpu' && gameState === STATE.SERVE) {
-                        setTimeout(() => {
-                if (gameState === STATE.SERVE && serving === 'cpu') {
-                    serveBall('cpu');
-                }
-            }, 1200);
-        }
     }
 
-                let serveAutoFired = false;
+    let serveAutoFired = false;
     let then = 0;
 
     function loop() {
@@ -837,13 +861,13 @@
             updatePlayer();
         }
 
-                drawCourt();
+        drawCourt();
 
-                drawSprite(cpu.swinging ? cpuSwing : cpuNormal, cpu.x, cpu.y);
+        drawSprite(cpu.swinging ? cpuSwing : cpuNormal, cpu.x, cpu.y);
         drawSprite(player.swinging ? dadSwing : dadNormal, player.x, player.y);
         drawBall();
 
-                if (gameState === STATE.SERVE) {
+        if (gameState === STATE.SERVE) {
             drawServePrompt();
         }
 
@@ -854,12 +878,7 @@
             ctx2d.drawImage(ballSprite, ball.x - BALL_W/2, ball.y - BALL_W/2, BALL_W, BALL_W);
         }
 
-                if (gameState === STATE.RALLY) {
-            const b = courtBounds();
-            const dist = Math.hypot(ball.x - player.x, ball.y - player.y);
-        }
-
-                if (gameState === STATE.POINT_END) {
+        if (gameState === STATE.POINT_END) {
             const alpha = clamp(pointEndTimer / 60 * 0.4, 0, 0.4);
             ctx2d.save();
             ctx2d.globalAlpha = alpha;
@@ -878,7 +897,7 @@
         }
     }
 
-                function showScreen(id) {
+    function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
     }
